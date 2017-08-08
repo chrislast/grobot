@@ -123,9 +123,11 @@ class Robot(object):
                 self.driver.go(cpan, -cpan)
         else:
             if cpan > 0:
-                self.driver.go(100, 100 - cpan)
+                self.driver.go(100, 100 - 2 * cpan)
+                LOG.log(99, "Target right %d %d",100, 100 - cpan)
             else:
-                self.driver.go(100 + cpan, 100)
+                self.driver.go(100 + 2 * cpan, 100)
+                LOG.log(99, "Target left %d %d",100 + cpan, 100)
             self.change(FOLLOW)
         self.scan_timeout = 0
     def scan(self):
