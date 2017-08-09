@@ -2,6 +2,8 @@
 ## Description
 Ball chasing robot using OpenCV library on a Raspberry Pi.  Start it going and it will look for a tennis ball, track it with the pan/tiltable camera and chase it until it reaches it or it moves again.
 
+![Grobot Picture](https://github.com/chrislast/grobot/blob/master/IMG_2046%5B1%5D.JPG)
+
 ## Parts List
 
 | Component | Link | Cost |
@@ -27,8 +29,8 @@ https://github.com/chrislast/grobot/blob/master/cv_pibot.py
 	[ ] Distance Sensor instead of target radius for more reliable stop detection
 	[ ] Predictive Target tracking
 	[ ] Accelerometer/Compass Position tracking
-  [ ] Sound
-  [ ] Start on boot
-  [ ] Improved object detection
-  [ ] Direct drive mode via IR remote control or wireless keyboard
+	[ ] Sound
+	[ ] Start on boot
+	[ ] Improved object detection
+	[ ] Direct drive mode via IR remote control or wireless keyboard
   
