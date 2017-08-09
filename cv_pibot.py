@@ -12,12 +12,13 @@ IDLE = 0
 SCAN = 1
 TRACK = 2
 FOLLOW = 3
+MANUAL = 4
 
 WIDTH = 320
 HEIGHT = 240
 FRAMES_PER_SECOND = 30
 
-SCAN_TIMEOUT = 50   # ~2 seconds
+SCAN_TIMEOUT = FRAMES_PER_SECOND * 6 / 2   # ~6 seconds
 MAX_TARGET_SIZE = 80    # target radius
 MIN_TARGET_SIZE = 0.1   # target radius
 
@@ -103,7 +104,8 @@ class Robot(object):
         self.colours = {IDLE: E.light.blue,
                         SCAN: E.light.red,
                         TRACK: E.light.yellow,
-                        FOLLOW: E.light.green}
+                        FOLLOW: E.light.green,
+                        MANUAL: E.light.all}
         LOG.log(99, "Created a Robot")
     def change(self, state):
         """Change or confirm the current robot state"""
@@ -124,10 +126,10 @@ class Robot(object):
         else:
             if cpan > 0:
                 self.driver.go(100, 100 - 2 * cpan)
-                LOG.log(99, "Target right %d %d",100, 100 - cpan)
+                LOG.log(99, "Target right %d %d", 100, 100 - 2 * cpan)
             else:
                 self.driver.go(100 + 2 * cpan, 100)
-                LOG.log(99, "Target left %d %d",100 + cpan, 100)
+                LOG.log(99, "Target left %d %d", 100 + 2 * cpan, 100)
             self.change(FOLLOW)
         self.scan_timeout = 0
     def scan(self):
@@ -136,7 +138,8 @@ class Robot(object):
             self.idle()
             return
         self.change(SCAN)
-        if self.camera.tilt.angle > 0:
+        self.camera.look(self.camera.pan.angle, 0)
+        if self.camera.pan.angle > 0:
             self.driver.go(100, -100)
         else:
             self.driver.go(-100, 100)
@@ -149,6 +152,9 @@ class Robot(object):
             self.camera.look(0, 0)
             time.sleep(1)
             self.camera.sleep()
+    def manual(self):
+        """@@TODO - Add manual remote drive method"""
+        pass
 
 def cv_pibot(robot, display_windows=True):
     """function to command a robot"""
@@ -174,9 +180,9 @@ def cv_pibot(robot, display_windows=True):
             break
         # resize the frame, blur it, and convert it to the HSV
         # color space
-        #image = imutils.resize(image, width=600)
-        # blurred = cv2.GaussianBlur(frame, (11, 11), 0)
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        # image = imutils.resize(image, width=600)
+        blurred = cv2.GaussianBlur(image, (11, 11), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
         # construct a mask for the color "green", then perform
         # a series of dilations and erosions to remove any small
         # blobs left in the mask
@@ -186,10 +192,10 @@ def cv_pibot(robot, display_windows=True):
         # find contours in the mask and initialize the current
         # (x, y) center of the ball
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-            cv2.CHAIN_APPROX_SIMPLE)[-2]
+                                cv2.CHAIN_APPROX_SIMPLE)[-2]
         center = None
         # only proceed if at least one contour was found
-        if len(cnts) > 0:
+        if cnts:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
             # centroid
@@ -204,14 +210,16 @@ def cv_pibot(robot, display_windows=True):
                 # then update the list of tracked points
                 cv2.circle(hsv, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                 cv2.circle(hsv, center, 5, (0, 0, 255), -1)
-                cv2.putText(hsv, "x=%d, y=%d" % (x, y), (10, 50), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
-                cv2.putText(hsv, str(image[y, x].tolist()) + " - " + str(radius), (10,230), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
+                cv2.putText(hsv, "x=%d, y=%d" % (x, y), (10, 50),
+                            cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
+                cv2.putText(hsv, str(image[y, x].tolist()) + " - " + str(radius),
+                            (10, 230), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
                 # Put Robot into target tracking mode
                 robot.track(radius, x, y)
         else:
             # Put Robot into target scanning mode
             if lost_count > 4:
-               robot.scan()
+                robot.scan()
             else:
                 lost_count += 1
         if display_windows:
