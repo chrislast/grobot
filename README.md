@@ -30,7 +30,9 @@ https://github.com/chrislast/grobot/blob/master/cv_pibot.py
 	[ ] Predictive Target tracking
 	[ ] Accelerometer/Compass Position tracking
 	[ ] Sound
-	[ ] Start on boot
+	[X] Start on boot - Spawn (15s delayed start) from /etc/rc.local
 	[ ] Improved object detection
+		[X] Added Blur stage
+		[ ] Shape detection
 	[ ] Direct drive mode via IR remote control or wireless keyboard
   
