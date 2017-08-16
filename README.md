@@ -35,6 +35,7 @@ https://github.com/chrislast/grobot/blob/master/cv_pibot.py
 	[X] Proximity-based watch and wait
 	[X] Aerial tracking
 	[X] Start on boot - Spawn (15s delayed start) from /etc/rc.local
+	[X] Capacitive touch start button
 
 ## Future Enhancements
 	[ ] On-board LCD panel for CV display
