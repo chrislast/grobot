@@ -7,6 +7,7 @@ from picamera import PiCamera
 import time
 import explorerhat as E
 import logging as LOG
+import numpy as N
 
 IDLE = 0
 SCAN = 1
@@ -19,6 +20,7 @@ HEIGHT = 240
 FRAMES_PER_SECOND = 30
 
 SCAN_TIMEOUT = FRAMES_PER_SECOND * 6 / 2   # ~6 seconds
+SCAN_STEPS = 32 # camera rotation points during scan start 
 MAX_TARGET_SIZE = 80    # target radius
 MIN_TARGET_SIZE = 0.1   # target radius
 
@@ -100,7 +102,7 @@ class Robot(object):
         self.driver = Driver()
         self.driver.stop()
         self.state = IDLE
-        self.scan_timeout = 0
+        self.scan_timeout = -SCAN_STEPS
         self.colours = {IDLE: E.light.blue,
                         SCAN: E.light.red,
                         TRACK: E.light.yellow,
@@ -131,18 +133,33 @@ class Robot(object):
                 self.driver.go(100 + 2 * cpan, 100)
                 LOG.log(99, "Target left %d %d", 100 + 2 * cpan, 100)
             self.change(FOLLOW)
-        self.scan_timeout = 0
+        self.scan_timeout = -SCAN_STEPS
     def scan(self):
         """Look for an object by rotating camera and vehicle"""
         if self.scan_timeout > SCAN_TIMEOUT:
             self.idle()
             return
         self.change(SCAN)
-        self.camera.look(self.camera.pan.angle, 0)
-        if self.camera.pan.angle > 0:
-            self.driver.go(100, -100)
+        if self.scan_timeout == -SCAN_STEPS:
+            # create a search pattern coordinate list
+            p = self.camera.pan.angle
+            t = self.camera.tilt.angle
+            self.scan_pattern = [(p+int(45*N.sign(p+0.1)*N.cos(N.radians(n))),
+                                  t+int(30*N.sign(t+0.1)*N.sin(N.radians(n))))
+                                 for n in range(0,360,360/SCAN_STEPS)]
+        if self.scan_timeout < 0:
+            # Look at the next search location
+            pan, tilt = self.scan_pattern[self.scan_timeout]
+            self.camera.look(pan, tilt)
         else:
-            self.driver.go(-100, 100)
+            # Reset the camera to staight ahead
+            self.camera.look(0, 0)
+            if self.scan_pattern[-SCAN_STEPS][0] > 0:
+                # Rotate left
+                self.driver.go(100, -100)
+            else:
+                # Rotate right
+                self.driver.go(-100, 100)
         self.scan_timeout += 1
     def idle(self):
         """Stop looking but keep watch in front"""
@@ -156,7 +173,7 @@ class Robot(object):
         """@@TODO - Add manual remote drive method"""
         pass
 
-def cv_pibot(robot, display_windows=True):
+def cv_pibot(robot, display_windows=False):
     """function to command a robot"""
     # get a reference to the raw camera capture
     rawCapture = PiRGBArray(robot.camera.picam, size=(WIDTH, HEIGHT))
