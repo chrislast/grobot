@@ -9,7 +9,7 @@ import explorerhat as E
 import logging as LOG
 import numpy as N
 import socket
-import gaugette.ssd1306
+import gaugette.sh1106
 import gaugette.gpio
 import gaugette.spi
 
@@ -28,20 +28,24 @@ SCAN_STEPS = 32 # camera rotation points during scan start
 MAX_TARGET_SIZE = 80    # target radius
 MIN_TARGET_SIZE = 0.1   # target radius
 
+# SPI DISPLAY
+DC_PIN = 16     # DATA/COMMAND on GPIO 15
+RESET_PIN = 15  # GPIO 14
+# OTHER GPIOS USED - SCLK 11, MOSI 10, CHIP SELECT 8
+
 class Oled(object):
     """SSD1306 OLED device"""
-    def __init__(self)
-        oled_gpio = gaugette.gpio.GPIO()
-        oled_spi = gaugette.spi.SPI(0,0)
-	self.oled = gaugette.ssd1306.SSD1306(oled_gpio, oled_spi, cd_pin=8, rst_pin=10 ,rows=64)
-        self.clear_display()
-        self.oled.begin()
-    def clear_display(self):
-        self.oled.clear_display()
-        self.oled.display()
-    def draw_text(self, x, y, text):
-        self.oled.draw_text(x, y, text)
-        self.oled.display()
+    def __init__(self):
+        _gpio = gaugette.gpio.GPIO()
+        _spi = gaugette.spi.SPI(0,0)
+        _oled = gaugette.sh1106.SH1106(_gpio, _spi, dc_pin=DC_PIN, reset_pin=RESET_PIN)
+        _oled.begin()
+        _oled.clear_display()
+        _oled.draw_text2(2, 0, "Grobot v0.2", size=1)
+        _oled.display()
+        self.oled = _oled
+        LOG.log(99, "Started OLED display")
+
 class Servo(object):
     """servo motors used by pan tilt device"""
     def __init__(self, pin, min, max):
@@ -126,6 +130,8 @@ class Robot(object):
                         TRACK: E.light.yellow,
                         FOLLOW: E.light.green,
                         MANUAL: E.light.all}
+        _oled = Oled()
+        self.oled = _oled.oled
         LOG.log(99, "Created a Robot")
     def change(self, state):
         """Change or confirm the current robot state"""
@@ -271,15 +277,17 @@ if __name__ == "__main__":
         robot = Robot()
         robot.idle()
         robot.camera.sleep()
-        # Wait for cap touch button four to be pressed
-        while not E.touch.four.is_pressed():
-            pass
         # Get the IP address of this pi so it can be used to see the webserver
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))  # google DNS
         global IP_ADDRESS
         IP_ADDRESS = s.getsockname()[0]
         s.close()
+        robot.oled.draw_text(2, 9, "IP Address %s" % IP_ADDRESS)
+        robot.oled.display()
+        # Wait for cap touch button four to be pressed
+        while not E.touch.four.is_pressed():
+            pass
         # Set the robot to work
         cv_pibot(robot)
     finally:
