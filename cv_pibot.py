@@ -8,6 +8,10 @@ import time
 import explorerhat as E
 import logging as LOG
 import numpy as N
+import socket
+import gaugette.ssd1306
+import gaugette.gpio
+import gaugette.spi
 
 IDLE = 0
 SCAN = 1
@@ -24,6 +28,20 @@ SCAN_STEPS = 32 # camera rotation points during scan start
 MAX_TARGET_SIZE = 80    # target radius
 MIN_TARGET_SIZE = 0.1   # target radius
 
+class Oled(object):
+    """SSD1306 OLED device"""
+    def __init__(self)
+        oled_gpio = gaugette.gpio.GPIO()
+        oled_spi = gaugette.spi.SPI(0,0)
+	self.oled = gaugette.ssd1306.SSD1306(oled_gpio, oled_spi, cd_pin=8, rst_pin=10 ,rows=64)
+        self.clear_display()
+        self.oled.begin()
+    def clear_display(self):
+        self.oled.clear_display()
+        self.oled.display()
+    def draw_text(self, x, y, text):
+        self.oled.draw_text(x, y, text)
+        self.oled.display()
 class Servo(object):
     """servo motors used by pan tilt device"""
     def __init__(self, pin, min, max):
@@ -173,7 +191,7 @@ class Robot(object):
         """@@TODO - Add manual remote drive method"""
         pass
 
-def cv_pibot(robot, display_windows=False):
+def cv_pibot(robot):
     """function to command a robot"""
     # get a reference to the raw camera capture
     rawCapture = PiRGBArray(robot.camera.picam, size=(WIDTH, HEIGHT))
@@ -233,23 +251,36 @@ def cv_pibot(robot, display_windows=False):
                             (10, 230), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
                 # Put Robot into target tracking mode
                 robot.track(radius, x, y)
+            else:
+		cv2.putText(hsv, "radius=%d" % radius, (10, 50),
+                            cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
         else:
+            cv2.putText(hsv, "Target Lost", (10, 50),
+                       cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
             # Put Robot into target scanning mode
             if lost_count > 4:
                 robot.scan()
             else:
                 lost_count += 1
-        if display_windows:
-            # show the frame to our screen
-            cv2.imshow("Frame", hsv)
+        # show the frame to our screen
+        status=cv2.imwrite("/home/pi/Desktop/grobot/img.png", hsv)
 
 if __name__ == "__main__":
     try:
-        # Create a robot instance and set it to work!
+        # Create a robot instance and put it into idle mode
         robot = Robot()
         robot.idle()
+        robot.camera.sleep()
+        # Wait for cap touch button four to be pressed
         while not E.touch.four.is_pressed():
             pass
+        # Get the IP address of this pi so it can be used to see the webserver
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # google DNS
+        global IP_ADDRESS
+        IP_ADDRESS = s.getsockname()[0]
+        s.close()
+        # Set the robot to work
         cv_pibot(robot)
     finally:
         # cleanup the camera and close any open windows
