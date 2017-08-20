@@ -269,7 +269,10 @@ def cv_pibot(robot):
             else:
                 lost_count += 1
         # show the frame to our screen
-        status=cv2.imwrite("/home/pi/Desktop/grobot/img.png", hsv)
+        status=cv2.imwrite("/home/pi/Desktop/grobot/html/img.png", hsv)
+        # Create a thumbnail to display on the OLED
+        #t0 = cv2.resize(mask,(64, 48), interpolation = cv2.INTER_AREA)
+        #status, bmp = cv2.imencode('.bmp', t0)
 
 if __name__ == "__main__":
     try:
@@ -288,6 +291,7 @@ if __name__ == "__main__":
         # Wait for cap touch button four to be pressed
         while not E.touch.four.is_pressed():
             pass
+        del E.touch
         # Set the robot to work
         cv_pibot(robot)
     finally:
