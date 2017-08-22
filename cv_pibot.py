@@ -279,6 +279,7 @@ def cv_pibot(robot):
         smallgrayimage = cv2.resize(grayimage, (128, 64))
         # convert to 1 bit monochrome values with dynamic threshold
         _, bwimage = cv2.threshold(smallgrayimage, 128, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+	# @TODO: Need to replace this with write to underlying bit array
         for y in range(63,-1,-1):
             for x in range(128):
                 robot.oled.draw_pixel(x, y, bwimage[y][x])
@@ -286,38 +287,6 @@ def cv_pibot(robot):
         robot.oled.fps_time = new_time
         robot.oled.draw_text(2, 1, "FPS %.1f " % fps)
         robot.oled.display()
-        # Create a thumbnail to display on the OLED
-        #t0 = cv2.resize(mask,(64, 48), interpolation = cv2.INTER_AREA)
-        #status, bmp = cv2.imencode('.bmp', t0)
-
-def create_thumbnail(img, cvt=cv2.COLOR_BGR2GRAY):
-    # header data for a 64x48x1 bitmap
-    mono64x48header = [0x42, 0x4d, 0xae, 01, 00, 00, 00, 00, 00, 00, 0x3e, 00,
-                       00, 00, 0x28, 00, 00, 00, 0x40, 0x00, 0x00, 0x00, 0x2e,
-                       00, 00, 00, 01, 00, 01, 00, 00, 00, 00, 00, 0x70, 01, 00,
-                       00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00,
-                       00, 00, 00, 00, 00, 00, 00, 0xff, 0xff, 0xff, 00]
-    # bitmap byte array
-    bmp = bytearray(mono64x48header)
-    step1 = cv2.cvtColor(img, cvt)
-    # Resize it to an OLED thumbnail
-    # ensure width % 16 == 0 to remove need for column padding
-    step2 = cv2.resize(step1, (64, 48))
-    # convert to 1 bit monochrome values with dynamic threshold
-    _, step3 = cv2.threshold(step2, 128, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    # convert to a list so we can reverse the rows because bitmaps
-    # like to start from the bottom row
-    step4 = step3.tolist()
-    step4.reverse()
-    # flatten the list
-    step5 = [row for rows in step4 for row in rows]
-    # Convert to bytes
-    while len(step5):
-        # convert 8 bit values to one numeric byte via string conversion
-        bmp.append(int(''.join(map(str,step5[:8])),2))
-        # and consume the converted bit data
-        step5 = step5[8:]
-    return bmp
 
 if __name__ == "__main__":
     try:
