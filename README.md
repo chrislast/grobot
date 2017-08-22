@@ -51,7 +51,14 @@ https://github.com/chrislast/grobot/blob/master/cv_pibot.py
 	[ ] 132x64 OLED Display
 		[X] Webserver IP address
 		[ ] Target Range
-		[ ] FPS Info
-		[ ] Realtime CV thumbnail
-	[ ] Direct drive mode via IR remote control or wireless keyboard
-  
+		[X] FPS Info
+		[X] Realtime CV thumbnail
+	[ ] Direct drive control mode
+
+## Performance optimisations
+	[ ] Performance mode option removing webserver/thumbnail
+	[ ] Boot to command line not desktop
+	[ ] Direct write to OLED bit array to replace 128x64xdraw_pixel()
+	[ ] CV step cost/benefit analysis
+	[ ] CPU usage profiling
+	[ ] GPU usage profiling
