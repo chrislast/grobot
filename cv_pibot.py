@@ -279,10 +279,23 @@ def cv_pibot(robot):
         smallgrayimage = cv2.resize(grayimage, (128, 64))
         # convert to 1 bit monochrome values with dynamic threshold
         _, bwimage = cv2.threshold(smallgrayimage, 128, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-	# @TODO: Need to replace this with write to underlying bit array
-        for y in range(63,-1,-1):
-            for x in range(128):
-                robot.oled.draw_pixel(x, y, bwimage[y][x])
+	# convert to a list so we can reverse the rows because bitmaps
+        # like to start from the bottom row
+        _data = bwimage.tolist()
+        _data.reverse()
+        # flatten the list
+        _bits = [row for rows in _data for row in rows]
+        # Convert the list of bits to a list of bytes in the oled bitmap array
+	robot.oled.bmp.data=[]
+        while _bits:
+            # Accumulate 8 bits into a byte
+            acc = 0
+            for bit in _bits[:8]:
+                acc <<= 1
+                acc += bit
+            robot.oled.bmp.data.append(acc)
+            bits = bits[8:]
+	robot.oled.bmp.display_block(0, 0, 0, 0)
         fps = 1 / (new_time - robot.oled.fps_time)
         robot.oled.fps_time = new_time
         robot.oled.draw_text(2, 1, "FPS %.1f " % fps)
