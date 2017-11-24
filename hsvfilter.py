@@ -7,6 +7,7 @@ i,j,o,k,p,l adjust upper hsv bound
 """
 import cv2
 import imutils
+import numpy
 
 colors = []
 
@@ -15,11 +16,23 @@ image = imutils.resize(image, width=600)
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 cv2.imshow("Frame", image)
 
-lh = ls = lv = 0
+p = 200  # lose p pixels from top line to correct camera perspective
+x = image.shape[1]
+y = image.shape[0]
+src = numpy.array([[p, 0], [x - p - 1, 0], [x - 1, y - 1], [0, y - 1]], dtype="float32")
+dst = numpy.array([[0, 0], [x - 1, 0], [x - 1, y - 1], [0, y - 1]], dtype="float32")
+M = cv2.getPerspectiveTransform(src, dst)
+image2 = cv2.warpPerspective(image, M, (x, y))
+cv2.imshow("i2", image2)
+
+ed = lh = ls = lv = 0
 hh = hs = hv = 255
 
 while True:
+    hsv = cv2.cvtColor(image2, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, (lh, ls, lv), (hh, hs, hv))
+    mask = cv2.erode(mask, None, iterations=ed)
+    mask = cv2.dilate(mask, None, iterations=ed)
     cv2.putText(mask,
                 "[%d, %d, %d], [%d, %d, %d]" % (lh, ls, lv, hh, hs, hv),
                 (10, 50),
@@ -55,6 +68,8 @@ while True:
         hv += 1
     elif key == ord('l') and hv:
         hv -= 1
+    elif key >= ord('0') and key <= ord('9'):
+        ed = key - ord('0')
     elif key == ord(' '):
         lh = ls = lv = 0
         hh = hs = hv = 255
